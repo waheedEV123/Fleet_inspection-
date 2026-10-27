@@ -11,7 +11,7 @@ type DraftPhoto = { blob: Blob; url: string; w: number; h: number; area: string;
 
 const empty = () => ({
   fleetNo: '', plate: '', emirate: 'Dubai', model: '', powertrain: 'Fuel' as 'Fuel' | 'EV',
-  returnedBy: '', staffId: '', odometer: '', energy: '', inspectedAt: localISO(new Date()), remarks: '',
+  returnedBy: '', staffId: '', staffEmail: '', odometer: '', energy: '', inspectedAt: localISO(new Date()), remarks: '',
 });
 
 function loadImg(src: string) {
@@ -136,6 +136,7 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
     if (!f.fleetNo.trim()) return ['Enter the fleet number.', '#fleetInput'];
     if (!f.plate.trim()) return ['Enter the plate number.', '#plateInput'];
     if (!f.returnedBy.trim()) return ['Enter who returned the vehicle.', '#returnedBy'];
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.staffEmail.trim())) return ['Enter the staff member\'s email so they receive the report.', '#staffEmail'];
     if (!String(f.odometer).trim()) return ['Enter the odometer reading.', '#odometer'];
     const missing = allItems.filter((i) => !checks[i.key]);
     if (missing.length) return [`${missing.length} checklist item${missing.length > 1 ? 's' : ''} still need${missing.length > 1 ? '' : 's'} a result.`, `[data-key="${missing[0].key}"]`];
@@ -177,7 +178,7 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
       allItems.forEach(({ key }) => { ch[key] = checks[key]; if (ch[key] === 'issue' && notes[key]) nt[key] = notes[key]; });
       const { error } = await supabase.from('inspections').insert({
         id, ref: makeRef(fleet || plate, d), fleet_no: fleet, plate, emirate: f.emirate, model: f.model.trim(), powertrain: f.powertrain,
-        returned_by: f.returnedBy.trim(), staff_id: f.staffId.trim() || null, odometer: f.odometer === '' ? null : Number(f.odometer),
+        returned_by: f.returnedBy.trim(), staff_id: f.staffId.trim() || null, staff_email: f.staffEmail.trim().toLowerCase(), odometer: f.odometer === '' ? null : Number(f.odometer),
         energy: f.energy || null, inspected_at: d.toISOString(), checks: ch, notes: nt, damage: !!damage, photos: stored,
         remarks: f.remarks.trim() || null,
       });
@@ -229,6 +230,7 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
               </div>
               <label className="f">Returned by (staff name)<input id="returnedBy" value={f.returnedBy} onChange={(e) => set('returnedBy', e.target.value)} /></label>
               <label className="f">Staff ID<input value={f.staffId} onChange={(e) => set('staffId', e.target.value)} /></label>
+              <label className="f full">Staff email (receives the report)<input id="staffEmail" type="email" inputMode="email" autoComplete="off" placeholder="name@eand.com" value={f.staffEmail} onChange={(e) => set('staffEmail', e.target.value)} /></label>
               <label className="f">Odometer (km)<input id="odometer" type="number" inputMode="numeric" min={0} value={f.odometer} onChange={(e) => set('odometer', e.target.value)} /></label>
               {f.powertrain === 'EV' ? (
                 <label className="f">Battery level (%)<input type="number" inputMode="numeric" min={0} max={100} value={f.energy} onChange={(e) => set('energy', e.target.value)} /></label>

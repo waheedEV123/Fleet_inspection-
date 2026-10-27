@@ -30,6 +30,7 @@ create table if not exists public.inspections (
   model text,
   powertrain text not null default 'Fuel',
   returned_by text not null,
+  staff_email text,
   staff_id text,
   odometer numeric,
   energy text,

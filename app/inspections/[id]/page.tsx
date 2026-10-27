@@ -45,6 +45,7 @@ export default async function ReportPage({ params, searchParams }: { params: { i
             <div><span>Reference</span><b>{r.ref}</b></div>
             <div><span>Vehicle</span><b>{r.model || '-'} ({r.powertrain === 'EV' ? 'Electric' : 'Fuel'})</b></div>
             <div><span>Returned by</span><b>{r.returned_by}{r.staff_id ? ` (${r.staff_id})` : ''}</b></div>
+            <div><span>Staff email</span><b style={{ wordBreak: 'break-all' }}>{r.staff_email || '-'}</b></div>
             <div><span>Inspected by</span><b>{r.inspector_name || '-'}{r.region ? ` (${r.region})` : ''}</b></div>
             <div><span>Date and time</span><b>{fmtDate(r.inspected_at)}</b></div>
             <div><span>Odometer</span><b>{r.odometer ?? '-'} km</b></div>

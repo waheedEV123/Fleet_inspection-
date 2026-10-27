@@ -23,7 +23,7 @@ async function buildPdf(r: Inspection, urls: (string | null)[]) {
   const fields: [string, string][] = [
     ['Fleet number', r.fleet_no || '-'], ['Plate', `${r.plate} (${r.emirate || '-'})`],
     ['Vehicle', `${r.model || '-'} (${r.powertrain === 'EV' ? 'Electric' : 'Fuel'})`],
-    ['Returned by', `${r.returned_by}${r.staff_id ? ' (ID ' + r.staff_id + ')' : ''}`],
+    ['Returned by', `${r.returned_by}${r.staff_id ? ' (ID ' + r.staff_id + ')' : ''}`], ['Staff email', r.staff_email || '-'],
     ['Inspected by', `${r.inspector_name || '-'}${r.region ? ' (' + r.region + ')' : ''}`],
     ['Odometer', `${r.odometer ?? '-'} km`], [r.powertrain === 'EV' ? 'Battery' : 'Fuel', energyLabel(r)],
     ['Checklist', `${c.ok} OK, ${c.issue} issue, ${c.na} N/A`], ['Damage or issues', r.damage ? `Yes, ${r.photos.filter((p) => p.kind !== 'diagram').length} photo(s)${r.photos.some((p) => p.kind === 'diagram') ? ' + diagram' : ''}` : 'None found'],
@@ -99,9 +99,11 @@ export default function ReportActions({ inspection: r, photoUrls, managerEmail, 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(justSaved ? 'Inspection saved.' : '');
   const link = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
-  const mail = managerEmail
-    ? `mailto:${encodeURIComponent(managerEmail)}?${cc ? 'cc=' + encodeURIComponent(cc) + '&' : ''}subject=${encodeURIComponent(emailSubject(r))}&body=${encodeURIComponent(emailText(r, link))}`
+  const to = [managerEmail, r.staff_email].filter(Boolean).join(',');
+  const mail = to
+    ? `mailto:${to}?${cc ? 'cc=' + encodeURIComponent(cc) + '&' : ''}subject=${encodeURIComponent(emailSubject(r))}&body=${encodeURIComponent(emailText(r, link))}`
     : '';
+  const mailLabel = managerEmail && r.staff_email ? 'Email fleet manager and staff' : managerEmail ? `Email ${managerEmail}` : 'Email staff';
 
   async function pdf() {
     setBusy(true);
@@ -117,7 +119,7 @@ export default function ReportActions({ inspection: r, photoUrls, managerEmail, 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn primary" onClick={() => window.print()}>Print report</button>
           <button className="btn" onClick={pdf} disabled={busy}>{busy ? 'Preparing PDF…' : 'Download PDF report'}</button>
-          {mail && <a className="btn warn" href={mail}>Email {managerEmail}</a>}
+          {mail && <a className="btn warn" href={mail}>{mailLabel}</a>}
         </div>
         {!managerEmail && (
           <p className="hint" style={{ margin: '10px 0 0' }}>

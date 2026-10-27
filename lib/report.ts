@@ -14,7 +14,7 @@ export function emailText(r: Inspection, link?: string) {
     `Fleet no: ${r.fleet_no || '-'}`,
     `Plate: ${r.plate} (${r.emirate || '-'})`,
     `Vehicle: ${r.model || '-'} (${r.powertrain === 'EV' ? 'Electric' : 'Fuel'})`,
-    `Returned by: ${r.returned_by}${r.staff_id ? ' (ID ' + r.staff_id + ')' : ''}`,
+    `Returned by: ${r.returned_by}${r.staff_id ? ' (ID ' + r.staff_id + ')' : ''}${r.staff_email ? ', ' + r.staff_email : ''}`,
     `Inspected by: ${r.inspector_name || '-'}${r.region ? ' (' + r.region + ')' : ''} on ${fmtDate(r.inspected_at)}`,
     `Odometer: ${r.odometer ?? '-'} km   ${r.powertrain === 'EV' ? 'Battery' : 'Fuel'}: ${energyLabel(r)}`, '',
     `Checklist: ${c.ok} OK, ${c.issue} issue${c.issue === 1 ? '' : 's'}, ${c.na} N/A`,

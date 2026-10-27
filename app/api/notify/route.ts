@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { emailSubject, emailText } from '@/lib/report';
 import type { Inspection } from '@/lib/types';
 
-// Emails the inspection to the fleet manager through Resend, with the damage photos attached.
+// Emails the inspection to the fleet manager and the staff member through Resend, with the photos attached.
 // Skips quietly when RESEND_API_KEY or the manager email is not set.
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
   }
 
   const { data: settings } = await supabase.from('settings').select('manager_email, cc').eq('id', 1).maybeSingle();
-  if (!settings?.manager_email) return NextResponse.json({ sent: false, reason: 'no_manager_email' });
+  const recipients = [settings?.manager_email, r.staff_email].filter(Boolean) as string[];
+  if (!recipients.length) return NextResponse.json({ sent: false, reason: 'no_recipients' });
 
   const attachments: { filename: string; content: string }[] = [];
   for (let i = 0; i < (r.photos || []).length; i++) {
@@ -39,8 +40,8 @@ export async function POST(request: Request) {
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from,
-      to: [settings.manager_email],
-      cc: settings.cc ? settings.cc.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined,
+      to: recipients,
+      cc: settings?.cc ? settings.cc.split(',').map((s: string) => s.trim()).filter(Boolean) : undefined,
       subject: emailSubject(r),
       text: emailText(r, `${site}/inspections/${r.id}`),
       attachments: attachments.length ? attachments : undefined,

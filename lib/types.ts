@@ -29,6 +29,7 @@ export type Inspection = {
   powertrain: 'Fuel' | 'EV';
   returned_by: string;
   staff_id: string | null;
+  staff_email: string | null;
   odometer: number | null;
   energy: string | null;
   inspector_name: string | null;
