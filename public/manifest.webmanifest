@@ -1,0 +1,9 @@
+{
+  "name": "Vehicle Return Inspection",
+  "short_name": "Inspection",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#E6EAEE",
+  "theme_color": "#18222D",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
