@@ -129,8 +129,8 @@ fieldset.group legend small{font-family:var(--font);font-weight:500;font-size:13
 .lookup.found{color:var(--ok);font-weight:600}
 .lookup.miss{color:var(--bad)}
 #fleetInput{font-size:22px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
-.filters{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:12px;align-items:end}
-@media (max-width:620px){.filters{grid-template-columns:1fr 1fr}.filters .fl,.filters .go{grid-column:1/-1}}
+.filters{display:grid;grid-template-columns:1.2fr .9fr 1fr 1fr auto;gap:12px;align-items:end}
+@media (max-width:620px){.filters{grid-template-columns:1fr 1fr}.filters .fl,.filters .go,.filters .ty{grid-column:1/-1}}
 .resbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
 .resbar b{font-size:15px}
 h3.sub{font-family:var(--cond);font-size:18px;margin:18px 0 10px}
@@ -172,3 +172,17 @@ table.list th{color:var(--muted);font-weight:600}
 .diagram-board canvas{touch-action:none;cursor:crosshair}
 .diagram-img{max-width:360px;margin:0 auto;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
 @media print{.diagram-img{max-width:300px}}
+@media (max-width:560px){
+  .hist-row{flex-wrap:wrap;gap:8px 12px}
+  .hist-row .who{order:3;flex-basis:100%}
+  .hist-row .badge{margin-left:auto}
+}
+
+.seg button[aria-checked="true"][data-type]{background:var(--ink);color:var(--surface)}
+.type-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-weight:600;font-size:13px;background:var(--ink);color:var(--surface)}
+
+.sig-board{position:relative;width:100%;aspect-ratio:600/220;border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden}
+.sig-board canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.sig-line{position:absolute;left:8%;right:6%;bottom:24%;border-bottom:1.5px dashed #b5bdc5}
+.sig-x{position:absolute;left:3%;bottom:24%;color:#9aa6b2;font-size:18px;line-height:1}
+.sig-img{max-width:340px;border:1px solid var(--line);border-radius:8px;background:#fff}

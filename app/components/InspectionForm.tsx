@@ -2,16 +2,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { AREAS, EMIRATES, FUEL, LBL, fmtDate, itemsFor, localISO, makeRef, normFleet, normPt } from '@/lib/checklist';
+import { AREAS, EMIRATES, FUEL, LBL, TYPE_INFO, fmtDate, itemsFor, localISO, makeRef, normFleet, normPt, type InspType } from '@/lib/checklist';
 import type { Status, Vehicle } from '@/lib/types';
 import DamageDiagram from './DamageDiagram';
+import SignaturePad, { renderSignature } from './SignaturePad';
 import { renderDiagram, type Stroke } from '@/lib/carDiagram';
 
 type DraftPhoto = { blob: Blob; url: string; w: number; h: number; area: string; note: string };
 
 const empty = () => ({
   fleetNo: '', plate: '', emirate: 'Dubai', model: '', powertrain: 'Fuel' as 'Fuel' | 'EV',
-  returnedBy: '', staffId: '', staffEmail: '', odometer: '', energy: '', inspectedAt: localISO(new Date()), remarks: '',
+  returnedBy: '', staffId: '', staffMobile: '', staffEmail: '', odometer: '', energy: '', inspectedAt: localISO(new Date()), remarks: '',
 });
 
 function loadImg(src: string) {
@@ -43,11 +44,13 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [f, setF] = useState(empty);
+  const [type, setType] = useState<InspType | null>(null);
   const [checks, setChecks] = useState<Record<string, Status>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [damage, setDamage] = useState<boolean | null>(null);
   const [photos, setPhotos] = useState<DraftPhoto[]>([]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
+  const [sig, setSig] = useState<Stroke[]>([]);
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
   const [vehLoaded, setVehLoaded] = useState(false);
   const [lookup, setLookup] = useState<{ text: string; cls: string }>({ text: '', cls: '' });
@@ -133,15 +136,19 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
   }
 
   function validate(): [string, string] | null {
+    if (!type) return ['Choose Handover or Return to staff.', '#typeSeg'];
     if (!f.fleetNo.trim()) return ['Enter the fleet number.', '#fleetInput'];
     if (!f.plate.trim()) return ['Enter the plate number.', '#plateInput'];
-    if (!f.returnedBy.trim()) return ['Enter who returned the vehicle.', '#returnedBy'];
+    if (!f.returnedBy.trim()) return ['Enter the staff member\'s name.', '#returnedBy'];
+    const mob = f.staffMobile.replace(/\D/g, '');
+    if (mob.length < 9 || mob.length > 13) return ['Enter the staff member\'s mobile number.', '#staffMobile'];
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.staffEmail.trim())) return ['Enter the staff member\'s email so they receive the report.', '#staffEmail'];
     if (!String(f.odometer).trim()) return ['Enter the odometer reading.', '#odometer'];
     const missing = allItems.filter((i) => !checks[i.key]);
     if (missing.length) return [`${missing.length} checklist item${missing.length > 1 ? 's' : ''} still need${missing.length > 1 ? '' : 's'} a result.`, `[data-key="${missing[0].key}"]`];
     if (damage === null) return ['Answer whether there is any damage or issue.', '#dmgSeg'];
     if (damage && !photos.length) return ['Add at least one photo of the damage or issue.', '#btnCamera'];
+    if (type === 'return' && !sig.length) return ['Ask the staff member to sign to confirm they received the vehicle.', '#sigPad'];
     return null;
   }
 
@@ -156,13 +163,20 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
     setSaving(true);
     try {
       const id = crypto.randomUUID();
-      const stored: { path: string; area: string; note: string; w: number; h: number; kind?: 'diagram' }[] = [];
+      const stored: { path: string; area: string; note: string; w: number; h: number; kind?: 'diagram' | 'signature' }[] = [];
       if (strokes.length) {
         const dg = await renderDiagram(strokes);
         const path = `${id}/diagram.jpg`;
         const { error } = await supabase.storage.from('damage-photos').upload(path, dg.blob, { contentType: 'image/jpeg' });
         if (error) throw error;
         stored.push({ path, area: 'Damage diagram', note: '', w: dg.w, h: dg.h, kind: 'diagram' });
+      }
+      if (sig.length) {
+        const sg = await renderSignature(sig);
+        const path = `${id}/signature.jpg`;
+        const { error } = await supabase.storage.from('damage-photos').upload(path, sg.blob, { contentType: 'image/jpeg' });
+        if (error) throw error;
+        stored.push({ path, area: 'Staff signature', note: '', w: sg.w, h: sg.h, kind: 'signature' });
       }
       for (let i = 0; i < photos.length; i++) {
         const p = photos[i];
@@ -177,8 +191,8 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
       const ch: Record<string, Status> = {}; const nt: Record<string, string> = {};
       allItems.forEach(({ key }) => { ch[key] = checks[key]; if (ch[key] === 'issue' && notes[key]) nt[key] = notes[key]; });
       const { error } = await supabase.from('inspections').insert({
-        id, ref: makeRef(fleet || plate, d), fleet_no: fleet, plate, emirate: f.emirate, model: f.model.trim(), powertrain: f.powertrain,
-        returned_by: f.returnedBy.trim(), staff_id: f.staffId.trim() || null, staff_email: f.staffEmail.trim().toLowerCase(), odometer: f.odometer === '' ? null : Number(f.odometer),
+        id, type: type!, ref: makeRef(fleet || plate, d, type!), fleet_no: fleet, plate, emirate: f.emirate, model: f.model.trim(), powertrain: f.powertrain,
+        returned_by: f.returnedBy.trim(), staff_id: f.staffId.trim() || null, staff_email: f.staffEmail.trim().toLowerCase(), staff_mobile: f.staffMobile.trim(), odometer: f.odometer === '' ? null : Number(f.odometer),
         energy: f.energy || null, inspected_at: d.toISOString(), checks: ch, notes: nt, damage: !!damage, photos: stored,
         remarks: f.remarks.trim() || null,
       });
@@ -203,7 +217,19 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
       <main>
         <section>
           <div className="card">
-            <h2>Vehicle and handover</h2>
+            <h2>Inspection type</h2>
+            <div className="seg big" role="radiogroup" aria-label="Inspection type" id="typeSeg" tabIndex={-1}>
+              {(['handover', 'return'] as InspType[]).map((t) => (
+                <button key={t} type="button" role="radio" data-type={t} aria-checked={type === t} onClick={() => setType(t)}>{TYPE_INFO[t].label}</button>
+              ))}
+            </div>
+            <p className="hint" style={{ margin: '10px 0 0' }}>
+              {type === 'return' ? 'The vehicle is being given back to a staff member.' : type === 'handover' ? 'A staff member is handing the vehicle over to fleet.' : 'Choose Handover when staff hand the vehicle over to fleet, or Return to staff when the vehicle is given back.'}
+            </p>
+          </div>
+
+          <div className="card">
+            <h2>Vehicle and staff</h2>
             <label className="f" style={{ marginBottom: 14 }}>Fleet number
               <input id="fleetInput" list="fleetList" autoComplete="off" placeholder="Type or pick the fleet number" value={f.fleetNo} onChange={(e) => onFleet(e.target.value)} />
               <span className={`lookup ${lookup.cls}`}>{lookup.text}</span>
@@ -228,9 +254,10 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
                   ))}
                 </div>
               </div>
-              <label className="f">Returned by (staff name)<input id="returnedBy" value={f.returnedBy} onChange={(e) => set('returnedBy', e.target.value)} /></label>
+              <label className="f">{type === 'return' ? 'Returned to (staff name)' : 'Handed over by (staff name)'}<input id="returnedBy" value={f.returnedBy} onChange={(e) => set('returnedBy', e.target.value)} /></label>
               <label className="f">Staff ID<input value={f.staffId} onChange={(e) => set('staffId', e.target.value)} /></label>
-              <label className="f full">Staff email (receives the report)<input id="staffEmail" type="email" inputMode="email" autoComplete="off" placeholder="name@eand.com" value={f.staffEmail} onChange={(e) => set('staffEmail', e.target.value)} /></label>
+              <label className="f">Staff mobile<input id="staffMobile" type="tel" inputMode="tel" autoComplete="off" placeholder="050 123 4567" value={f.staffMobile} onChange={(e) => set('staffMobile', e.target.value)} /></label>
+              <label className="f">Staff email (receives the report)<input id="staffEmail" type="email" inputMode="email" autoComplete="off" placeholder="name@eand.com" value={f.staffEmail} onChange={(e) => set('staffEmail', e.target.value)} /></label>
               <label className="f">Odometer (km)<input id="odometer" type="number" inputMode="numeric" min={0} value={f.odometer} onChange={(e) => set('odometer', e.target.value)} /></label>
               {f.powertrain === 'EV' ? (
                 <label className="f">Battery level (%)<input type="number" inputMode="numeric" min={0} max={100} value={f.energy} onChange={(e) => set('energy', e.target.value)} /></label>
@@ -316,6 +343,16 @@ export default function InspectionForm({ inspectorName, region }: { inspectorNam
           <div className="card">
             <h2>Remarks</h2>
             <label className="f">Anything else the fleet manager should know<textarea value={f.remarks} onChange={(e) => set('remarks', e.target.value)} /></label>
+          </div>
+
+          <div className="card">
+            <h2>Staff signature{type === 'return' ? '' : ' (optional)'}</h2>
+            <p className="hint">
+              {type === 'return'
+                ? `Ask ${f.returnedBy.trim() || 'the staff member'} to sign below to confirm they received the vehicle in the condition recorded.`
+                : `Ask ${f.returnedBy.trim() || 'the staff member'} to sign below to confirm the vehicle's condition at handover.`}
+            </p>
+            <SignaturePad strokes={sig} onChange={setSig} />
           </div>
         </section>
       </main>

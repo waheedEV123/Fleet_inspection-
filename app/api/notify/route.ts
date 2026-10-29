@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const attachments: { filename: string; content: string }[] = [];
   for (let i = 0; i < (r.photos || []).length; i++) {
     const { data: file } = await supabase.storage.from('damage-photos').download(r.photos[i].path);
-    if (file) attachments.push({ filename: r.photos[i].kind === 'diagram' ? `${r.ref}-diagram.jpg` : `${r.ref}-photo-${i + 1}.jpg`, content: Buffer.from(await file.arrayBuffer()).toString('base64') });
+    if (file) attachments.push({ filename: r.photos[i].kind ? `${r.ref}-${r.photos[i].kind}.jpg` : `${r.ref}-photo-${i + 1}.jpg`, content: Buffer.from(await file.arrayBuffer()).toString('base64') });
   }
 
   const site = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;

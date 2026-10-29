@@ -17,7 +17,7 @@ export type Vehicle = {
 
 export type Status = 'ok' | 'issue' | 'na';
 
-export type Photo = { path: string; area: string; note: string; w: number; h: number; kind?: 'diagram' };
+export type Photo = { path: string; area: string; note: string; w: number; h: number; kind?: 'diagram' | 'signature' };
 
 export type Inspection = {
   id: string;
@@ -30,6 +30,8 @@ export type Inspection = {
   returned_by: string;
   staff_id: string | null;
   staff_email: string | null;
+  staff_mobile: string | null;
+  type: 'handover' | 'return' | null;
   odometer: number | null;
   energy: string | null;
   inspector_name: string | null;

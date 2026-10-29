@@ -6,7 +6,7 @@ export default function Header({ profile, current }: { profile: Profile; current
   return (
     <header className="top">
       <div className="top-inner">
-        <h1>Vehicle return inspection</h1>
+        <h1>Vehicle inspection</h1>
         <p>Fleet Command Centre</p>
         <div className="who-bar">
           <span>

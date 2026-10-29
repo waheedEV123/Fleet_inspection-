@@ -3,7 +3,7 @@ import Header from '@/app/components/Header';
 import ReportActions from '@/app/components/ReportActions';
 import { requireProfile } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
-import { LBL, counts, energyLabel, fmtDate, itemsFor, labelOf } from '@/lib/checklist';
+import { LBL, TYPE_INFO, counts, energyLabel, fmtDate, itemsFor, labelOf, typeOf } from '@/lib/checklist';
 import type { Inspection } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -25,17 +25,18 @@ export default async function ReportPage({ params, searchParams }: { params: { i
   const c = counts(r);
   const indexed = (r.photos || []).map((p, i) => ({ p, i }));
   const diagram = indexed.filter(({ p }) => p.kind === 'diagram');
-  const shots = indexed.filter(({ p }) => p.kind !== 'diagram');
+  const shots = indexed.filter(({ p }) => !p.kind);
+  const signature = indexed.find(({ p }) => p.kind === 'signature');
   const iss = Object.entries(r.checks).filter(([, v]) => v === 'issue');
 
   return (
     <>
       <Header profile={profile} current="report" />
       <main>
-        <div className="print-head"><h1>Vehicle return inspection</h1><span>{r.ref}</span></div>
+        <div className="print-head"><h1>{TYPE_INFO[typeOf(r)].title}</h1><span>{r.ref}</span></div>
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-            <div className="plate-show"><span>{r.emirate || '-'}</span><span>{r.plate}</span></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}><span className="type-chip">{TYPE_INFO[typeOf(r)].label}</span><div className="plate-show"><span>{r.emirate || '-'}</span><span>{r.plate}</span></div></div>
             <span className={`badge ${r.damage || c.issue ? 'bad' : 'ok'}`}>
               {r.damage ? 'Damage or issues reported' : c.issue ? `${c.issue} issue${c.issue > 1 ? 's' : ''} found` : 'All clear'}
             </span>
@@ -44,7 +45,8 @@ export default async function ReportPage({ params, searchParams }: { params: { i
             <div><span>Fleet number</span><b>{r.fleet_no || '-'}</b></div>
             <div><span>Reference</span><b>{r.ref}</b></div>
             <div><span>Vehicle</span><b>{r.model || '-'} ({r.powertrain === 'EV' ? 'Electric' : 'Fuel'})</b></div>
-            <div><span>Returned by</span><b>{r.returned_by}{r.staff_id ? ` (${r.staff_id})` : ''}</b></div>
+            <div><span>{TYPE_INFO[typeOf(r)].staff}</span><b>{r.returned_by}{r.staff_id ? ` (${r.staff_id})` : ''}</b></div>
+            <div><span>Staff mobile</span><b>{r.staff_mobile ? <a href={`tel:${r.staff_mobile.replace(/[^\d+]/g, '')}`}>{r.staff_mobile}</a> : '-'}</b></div>
             <div><span>Staff email</span><b style={{ wordBreak: 'break-all' }}>{r.staff_email || '-'}</b></div>
             <div><span>Inspected by</span><b>{r.inspector_name || '-'}{r.region ? ` (${r.region})` : ''}</b></div>
             <div><span>Date and time</span><b>{fmtDate(r.inspected_at)}</b></div>
@@ -110,6 +112,18 @@ export default async function ReportPage({ params, searchParams }: { params: { i
           ))}
         </div>
         {r.remarks && <div className="card"><h2>Remarks</h2><p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.remarks}</p></div>}
+        {signature && (
+          <div className="card">
+            <h2>Staff signature</h2>
+            {urls[signature.i]
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img className="sig-img" src={urls[signature.i]!} alt={`Signature of ${r.returned_by}`} />
+              : <div className="empty">Signature not available</div>}
+            <p className="hint" style={{ margin: '8px 0 0' }}>
+              Signed by <b>{r.returned_by}</b>{r.staff_id ? ` (${r.staff_id})` : ''}, {TYPE_INFO[typeOf(r)].staff.toLowerCase()}, on {fmtDate(r.inspected_at)}.
+            </p>
+          </div>
+        )}
       </main>
     </>
   );

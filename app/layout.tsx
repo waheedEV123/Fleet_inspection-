@@ -6,8 +6,8 @@ const barlow = Barlow({ subsets: ['latin'], weight: ['400', '500', '600', '700']
 const barlowCond = Barlow_Condensed({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-barlow-cond' });
 
 export const metadata: Metadata = {
-  title: 'Vehicle Return Inspection',
-  description: 'Fleet Command Centre vehicle return inspections',
+  title: 'Vehicle Inspection',
+  description: 'Fleet Command Centre vehicle handover and return inspections',
   manifest: '/manifest.webmanifest',
   icons: { icon: '/icon.svg', apple: '/icon.svg' },
 };

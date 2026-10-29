@@ -75,7 +75,13 @@ export const fmtDate = (s: string | Date) => {
 };
 export const localISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 export const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-export const makeRef = (fleet: string, d: Date) =>
-  `INS-${fleet.replace(/[^A-Z0-9]/g, '')}-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+export type InspType = 'handover' | 'return';
+export const TYPE_INFO: Record<InspType, { label: string; title: string; staff: string; prefix: string }> = {
+  handover: { label: 'Handover', title: 'Vehicle handover report', staff: 'Handed over by', prefix: 'HND' },
+  return: { label: 'Return to staff', title: 'Vehicle return report', staff: 'Returned to', prefix: 'RTN' },
+};
+export const typeOf = (r: { type?: string | null }): InspType => (r.type === 'return' ? 'return' : 'handover');
+export const makeRef = (fleet: string, d: Date, type: InspType = 'handover') =>
+  `${TYPE_INFO[type].prefix}-${fleet.replace(/[^A-Z0-9]/g, '')}-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 export const energyLabel = (r: Pick<Inspection, 'powertrain' | 'energy'>) =>
   `${r.energy || '-'}${r.powertrain === 'EV' && r.energy ? '%' : ''}`;

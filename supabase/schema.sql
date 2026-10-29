@@ -31,6 +31,8 @@ create table if not exists public.inspections (
   powertrain text not null default 'Fuel',
   returned_by text not null,
   staff_email text,
+  staff_mobile text,
+  type text not null default 'handover',
   staff_id text,
   odometer numeric,
   energy text,

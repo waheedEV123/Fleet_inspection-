@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { LBL, counts, energyLabel, fmtDate, itemsFor, labelOf } from '@/lib/checklist';
+import { LBL, TYPE_INFO, counts, energyLabel, fmtDate, itemsFor, labelOf, typeOf } from '@/lib/checklist';
 import { emailSubject, emailText } from '@/lib/report';
 import type { Inspection } from '@/lib/types';
 
@@ -17,16 +17,16 @@ async function buildPdf(r: Inspection, urls: (string | null)[]) {
   let y = 34;
   const need = (h: number) => { if (y + h > 284) { doc.addPage(); y = 16; } };
   doc.setFillColor(24, 34, 45); doc.rect(0, 0, W, 24, 'F'); doc.setFillColor(242, 183, 5); doc.rect(0, 24, W, 2, 'F');
-  doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Vehicle return inspection', M, 11);
+  doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(TYPE_INFO[typeOf(r)].title, M, 11);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text(r.ref, M, 18); doc.text(fmtDate(r.inspected_at), W - M, 18, { align: 'right' });
   const c = counts(r);
   const fields: [string, string][] = [
     ['Fleet number', r.fleet_no || '-'], ['Plate', `${r.plate} (${r.emirate || '-'})`],
     ['Vehicle', `${r.model || '-'} (${r.powertrain === 'EV' ? 'Electric' : 'Fuel'})`],
-    ['Returned by', `${r.returned_by}${r.staff_id ? ' (ID ' + r.staff_id + ')' : ''}`], ['Staff email', r.staff_email || '-'],
+    [TYPE_INFO[typeOf(r)].staff, `${r.returned_by}${r.staff_id ? ' (ID ' + r.staff_id + ')' : ''}`], ['Staff mobile', r.staff_mobile || '-'], ['Staff email', r.staff_email || '-'],
     ['Inspected by', `${r.inspector_name || '-'}${r.region ? ' (' + r.region + ')' : ''}`],
     ['Odometer', `${r.odometer ?? '-'} km`], [r.powertrain === 'EV' ? 'Battery' : 'Fuel', energyLabel(r)],
-    ['Checklist', `${c.ok} OK, ${c.issue} issue, ${c.na} N/A`], ['Damage or issues', r.damage ? `Yes, ${r.photos.filter((p) => p.kind !== 'diagram').length} photo(s)${r.photos.some((p) => p.kind === 'diagram') ? ' + diagram' : ''}` : 'None found'],
+    ['Checklist', `${c.ok} OK, ${c.issue} issue, ${c.na} N/A`], ['Damage or issues', r.damage ? `Yes, ${r.photos.filter((p) => !p.kind).length} photo(s)${r.photos.some((p) => p.kind === 'diagram') ? ' + diagram' : ''}` : 'None found'],
   ];
   fields.forEach((f, i) => {
     const x = M + (i % 2) * 92; if (i % 2 === 0 && i) y += 12;
@@ -57,6 +57,18 @@ async function buildPdf(r: Inspection, urls: (string | null)[]) {
     need(14); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(24, 34, 45); doc.text('Remarks', M, y); y += 5;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10); const t = doc.splitTextToSize(r.remarks, W - 2 * M); need(t.length * 5); doc.text(t, M, y); y += t.length * 5 + 4;
   }
+  const sIdx = r.photos.findIndex((p) => p.kind === 'signature');
+  if (sIdx >= 0) {
+    const sw = 70, sh = (sw * (r.photos[sIdx].h || 220)) / (r.photos[sIdx].w || 600);
+    need(sh + 22);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(24, 34, 45); doc.text('Staff signature', M, y); y += 3;
+    let data: string | null = null; try { if (urls[sIdx]) data = await toDataUrl(urls[sIdx]!); } catch {}
+    if (data) doc.addImage(data, 'JPEG', M, y, sw, sh); else { doc.setDrawColor(200); doc.rect(M, y, sw, sh); }
+    doc.setDrawColor(200); doc.rect(M, y, sw, sh);
+    y += sh + 5;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    doc.text(`Signed by ${r.returned_by}${r.staff_id ? ' (' + r.staff_id + ')' : ''}, ${TYPE_INFO[typeOf(r)].staff.toLowerCase()}, on ${fmtDate(r.inspected_at)}`, M, y); y += 8;
+  }
   const fit = (w: number, h: number, maxW: number, maxH: number) => { const k = Math.min(maxW / (w || 4), maxH / (h || 3)); return { w: (w || 4) * k, h: (h || 3) * k }; };
   const dIdx = r.photos.findIndex((p) => p.kind === 'diagram');
   if (r.damage && dIdx >= 0) {
@@ -66,7 +78,7 @@ async function buildPdf(r: Inspection, urls: (string | null)[]) {
     if (data) doc.addImage(data, 'JPEG', (W - sz.w) / 2, y, sz.w, sz.h);
     else { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.text('Diagram unavailable', M, y + 6); }
   }
-  const shots = r.photos.map((p, j) => ({ p, j })).filter(({ p }) => p.kind !== 'diagram');
+  const shots = r.photos.map((p, j) => ({ p, j })).filter(({ p }) => !p.kind);
   if (r.damage && shots.length) {
     doc.addPage(); y = 16; doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(24, 34, 45); doc.text('Photos of damage and issues', M, y); y += 6;
     const colW = 88;

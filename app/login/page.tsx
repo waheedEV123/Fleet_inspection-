@@ -51,7 +51,7 @@ export default function LoginPage() {
     <>
       <header className="top">
         <div className="top-inner" style={{ paddingBottom: 14 }}>
-          <h1>Vehicle return inspection</h1>
+          <h1>Vehicle inspection</h1>
           <p style={{ marginBottom: 0 }}>Fleet Command Centre</p>
         </div>
       </header>
