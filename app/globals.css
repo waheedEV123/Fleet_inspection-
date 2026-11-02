@@ -218,7 +218,7 @@ main.dash{max-width:1180px}
 .yaxis{position:relative;width:34px;font-size:12px;color:var(--axis);font-variant-numeric:tabular-nums}
 .yaxis span{position:absolute;right:0;transform:translateY(50%)}
 .plot{position:relative;min-width:0;border-bottom:1px solid var(--axis)}
-.grid{position:absolute;left:0;right:0;border-top:1px solid var(--grid)}
+.plot .gline{position:absolute;left:0;right:0;border-top:1px solid var(--grid)}
 .colchart .plot{display:flex;align-items:flex-end;gap:2px}
 .col{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;justify-content:center;cursor:default;position:relative;outline-offset:2px}
 .col:hover,.col.hot{background:color-mix(in srgb,var(--ink) 6%,transparent)}

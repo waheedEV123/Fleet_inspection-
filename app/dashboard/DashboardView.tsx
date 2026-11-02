@@ -139,7 +139,7 @@ export default function DashboardView({ profile, d, from, to, type, region, regi
                   {[1, 0.5, 0].map((f) => <span key={f} style={{ bottom: `${f * 100}%` }}>{nf.format(Math.round(tMax * f))}</span>)}
                 </div>
                 <div className="plot">
-                  {[1, 0.5].map((f) => <div key={f} className="grid" style={{ bottom: `${f * 100}%` }} />)}
+                  {[1, 0.5].map((f) => <div key={f} className="gline" style={{ bottom: `${f * 100}%` }} />)}
                   {d.trend.map((b) => (
                     <div key={b.key} className="col" tabIndex={0}
                       data-tip={`${b.tip}|${nf.format(b.total)} inspections|Handover ${nf.format(b.handover)} · Return ${nf.format(b.ret)}|${nf.format(b.damage)} with damage or issues`}>
@@ -166,7 +166,7 @@ export default function DashboardView({ profile, d, from, to, type, region, regi
                   {[1, 0.5, 0].map((f) => <span key={f} style={{ bottom: `${f * 100}%` }}>{Math.round(rateMax * f)}%</span>)}
                 </div>
                 <div className="plot">
-                  {[1, 0.5].map((f) => <div key={f} className="grid" style={{ bottom: `${f * 100}%` }} />)}
+                  {[1, 0.5].map((f) => <div key={f} className="gline" style={{ bottom: `${f * 100}%` }} />)}
                   <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                     <polyline points={line} fill="none" stroke="var(--bad)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
                   </svg>
