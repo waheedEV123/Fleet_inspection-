@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Profile } from '@/lib/types';
 
-export default function Header({ profile, current }: { profile: Profile; current: 'new' | 'history' | 'admin' | 'report' }) {
+export default function Header({ profile, current }: { profile: Profile; current: 'new' | 'history' | 'admin' | 'report' | 'dashboard' }) {
   const tab = (key: string) => (current === key ? 'page' : undefined);
   return (
     <header className="top">
@@ -18,8 +18,9 @@ export default function Header({ profile, current }: { profile: Profile; current
           </form>
         </div>
         <nav className="tabs" aria-label="Sections">
-          <Link href="/" aria-current={tab('new')}>New inspection</Link>
+          <Link href="/" aria-current={tab('new')}>{profile.role === 'admin' ? 'New' : 'New inspection'}</Link>
           <Link href="/history" aria-current={tab('history')}>History</Link>
+          {profile.role === 'admin' && <Link href="/dashboard" aria-current={tab('dashboard')}>Dashboard</Link>}
           {profile.role === 'admin' && <Link href="/admin" aria-current={tab('admin')}>Settings</Link>}
         </nav>
       </div>
